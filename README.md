@@ -1,7 +1,9 @@
 # tanx
 tanx multiplayer webgl game
 
-[online demo](http://playcanv.as/p/aP0oxhUr "tanx game")
+[__online demo__](http://playcanv.as/p/aP0oxhUr "tanx game")
+
+![screenshot of tanx game](tanx-screenshot.jpg "screenshot of tanx game")
 
 # installation & running
 
