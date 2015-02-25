@@ -29,6 +29,11 @@ var lobby = new Lobby();
 
 // gamepad players
 var players = {};
+var colors = {};
+var gamepads = {};
+
+// rtc controller
+var waitingGamepads = {};
 
 // socket connection
 ws.on('connection', function(client) {
@@ -67,4 +72,68 @@ ws.on('connection', function(client) {
 
         playerClient.send('gamepad', data);
     });
+
+    client.on('gamepad.color', function(data) {
+        console.log('[gamepad] Sending gamepad color to gamepad:', data);
+
+        var playerID = data.player;
+        var gamepadClient = gamepads[playerID];
+
+        colors[playerID] = data.color;
+
+        if (!gamepadClient) {
+            return console.error('[gamepad] Player %s not yet in gamepads:',
+                playerID);
+        }
+
+        gamepadClient.send('gamepad.color', data.color);
+    });
+
+    client.on('rtc.peer', function (data) {
+        var player = data.player;
+        var peerGamepad = waitingGamepads[player];
+
+        console.log('\n\n\npeer request made for player', player);
+
+        // initiator or not
+        if (peerGamepad && peerGamepad !== client &&
+            peerGamepad.socket.readyState === 1) {
+
+            console.log('found a waiting peer');
+
+            // send a wink
+            client.send('rtc.peer', {initiator: true});
+            peerGamepad.send('rtc.peer');
+
+            // swap numbers ;)
+            client.peer = peerGamepad;
+            peerGamepad.peer = client;
+
+            // wait no more
+            waitingGamepads[player] = null;
+        } else {
+            // waiting for a friend
+            waitingGamepads[player] = client;
+            console.log('no peer found yet, waiting...');
+        }
+    });
+
+    client.on('rtc.signal', function (data) {
+        console.log('signal recieved');
+        if (client.peer) {
+            client.peer.send('rtc.signal', data);
+        } else {
+            console.warn('signal with no peer!');
+        }
+    });
+
+    client.on('rtc.close', function (data) {
+        var peer = client.peer;
+        if (peer) {
+            peer.send('rtc.close');
+            peer.peer = null;
+            client.peer = null;
+        }
+    });
+
 });
