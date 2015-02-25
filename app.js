@@ -129,11 +129,13 @@ ws.on('connection', function(client) {
 
     client.on('rtc.close', function (data) {
         var peer = client.peer;
+        var player = data.player;
         if (peer) {
             peer.send('rtc.close');
             peer.peer = null;
             client.peer = null;
         }
+        waitingGamepads[player] = client;
     });
 
 });
